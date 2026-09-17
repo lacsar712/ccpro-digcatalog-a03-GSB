@@ -102,9 +102,53 @@ func Run(db *gorm.DB) {
 			ArtifactType: "青铜器", MaterialName: "青铜", Completeness: "碎片",
 			FindDate: date("2024-06-20"), Description: "青铜戈援部碎片", StorageLoc: "库房B-柜07",
 		},
+		{
+			UnitID: units[0].ID, MaterialID: &m0, RegisterNo: "EL-2024-0004",
+			ArtifactType: "陶片", MaterialName: "陶器", Completeness: "碎片",
+			FindDate: date("2024-03-16"), Description: "泥质灰陶腹部残片，弦纹与 EL-2024-0001 可对接", StorageLoc: "库房A-架01",
+		},
+		{
+			UnitID: units[0].ID, MaterialID: &m0, RegisterNo: "EL-2024-0005",
+			ArtifactType: "陶片", MaterialName: "陶器", Completeness: "残缺",
+			FindDate: date("2024-03-18"), Description: "灰陶罐底残片，器形待拼合确认", StorageLoc: "库房A-架01",
+		},
+		{
+			UnitID: units[2].ID, MaterialID: &m3, RegisterNo: "LZ-2024-0011",
+			ArtifactType: "玉器", MaterialName: "玉石", Completeness: "碎片",
+			FindDate: date("2024-05-09"), Description: "玉琮另一角残片，刻纹与 LZ-2024-0010 连续", StorageLoc: "珍品柜-01",
+		},
+		{
+			UnitID: units[3].ID, MaterialID: &m1, RegisterNo: "YX-2024-0023",
+			ArtifactType: "青铜器", MaterialName: "青铜", Completeness: "碎片",
+			FindDate: date("2024-06-21"), Description: "青铜戈胡部碎片，与 YX-2024-0022 同坑出土", StorageLoc: "库房B-柜07",
+		},
 	}
 	for i := range finds {
 		db.Create(&finds[i])
+	}
+
+	// 残片拼合组：2 个 open + 1 个 closed，成员均为既有 Find（残缺/碎片）
+	joinGroups := []models.JoinGroup{
+		{Code: "JG-2024-001", Title: "灰陶罐口沿与腹部拼合", Status: models.JoinGroupStatusOpen,
+			Note: "T1 探方第②层出土泥质灰陶残片，弦纹可对接，暂定为同一陶罐"},
+		{Code: "JG-2024-002", Title: "青铜戈残件拼合", Status: models.JoinGroupStatusOpen,
+			Note: "T3 灰坑出土青铜戈援部与胡部碎片，待除锈后试拼"},
+		{Code: "JG-2024-003", Title: "玉琮残件拼合", Status: models.JoinGroupStatusClosed,
+			Note: "玉琮两角残片已完成拼对并修复定级，组关闭归档"},
+	}
+	for i := range joinGroups {
+		db.Create(&joinGroups[i])
+	}
+	members := []models.JoinMember{
+		{GroupID: joinGroups[0].ID, FindID: finds[0].ID}, // EL-2024-0001
+		{GroupID: joinGroups[0].ID, FindID: finds[6].ID}, // EL-2024-0004
+		{GroupID: joinGroups[1].ID, FindID: finds[5].ID}, // YX-2024-0022
+		{GroupID: joinGroups[1].ID, FindID: finds[9].ID}, // YX-2024-0023
+		{GroupID: joinGroups[2].ID, FindID: finds[3].ID}, // LZ-2024-0010
+		{GroupID: joinGroups[2].ID, FindID: finds[8].ID}, // LZ-2024-0011
+	}
+	for i := range members {
+		db.Create(&members[i])
 	}
 
 	log.Println("seed data inserted")

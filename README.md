@@ -1,6 +1,6 @@
 # 考古发掘出土文物编目系统（DigCatalog）
 
-面向考古工地出土文物登记与编目的全栈演示项目：支持发掘工地、探方/发掘单位、出土文物、材质字典的 CRUD，以及概览统计。
+面向考古工地出土文物登记与编目的全栈演示项目：支持发掘工地、探方/发掘单位、出土文物、材质字典的 CRUD，残片拼合组管理，以及概览统计。
 
 ## 技术栈
 
@@ -50,7 +50,45 @@ docker compose up --build
 3. **探方/发掘单位 Unit** — 所属工地、编号、深度区间、地层简述
 4. **出土文物 Find** — 所属探方、登记号、器物类型、材质、完整度、出土日期、描述、存放位置
 5. **材质分类 Material** — 名称、描述（字典表）
-6. **概览页** — 工地数、探方数、文物总数、按器物类型统计
+6. **残片拼合组 JoinGroup** — 将同一器物的残片（既有 Find 数据）归组管理，见下节
+7. **概览页** — 工地数、探方数、文物总数、按器物类型统计
+
+## 残片拼合子系统
+
+拼合组复用既有文物主数据（`Find`），通过关联表 `join_members` 组残片，不另建平行文物表。
+
+**数据模型**
+
+- `JoinGroup`：`code`（全库唯一）、`title`、`note`、`status`（`open` / `closed`）
+- `JoinMember`：`(group_id, find_id)` 唯一；关联表记录，物理删除
+
+**业务规则**
+
+- 同一时刻一个 Find 只能属于一个 `open` 组（历史 closed 组不受限）
+- 入组时 Find 完整度为「完整」则拒绝（400）——完整器物无需拼合
+- `closed` 组禁止再增删成员；关闭操作为 `POST /api/joingroups/:id/close`
+- 删除文物时自动清理其拼合组成员记录；删除拼合组时一并移除成员关联
+
+**API**
+
+- `GET /api/joingroups?status=open|closed` — 列表（含成员数），可按状态过滤
+- `POST /api/joingroups` — 新建（code、title、note，初始为 open）
+- `GET /api/joingroups/:id` — 详情（含成员及文物、探方信息）
+- `PUT /api/joingroups/:id` — 修改 code / title / note
+- `DELETE /api/joingroups/:id` — 删除组及成员关联
+- `POST /api/joingroups/:id/close` — 关闭组
+- `POST /api/joingroups/:id/members` — 添加成员 `{ "findId": n }`
+- `DELETE /api/joingroups/:id/members/:findId` — 移出成员
+- `GET /api/finds/:id/joingroups` — 按文物反查所属拼合组
+- `GET /api/finds` 列表项附带 `joinGroupId` / `joinGroupCode`（当前 open 组）
+
+**前端**
+
+- 侧栏「残片拼合组」：列表页支持按状态筛选、新建/编辑/关闭/删除
+- 组详情页：成员列表；open 组可按探方勾选「残缺/碎片」残片批量入组、移出成员
+- 「出土文物」列表显示文物当前所属拼合组编号，可跳转组详情
+
+**种子数据**：`JG-2024-001`、`JG-2024-002`（open）与 `JG-2024-003`（closed）共 3 个拼合组及成员。
 
 ## API 前缀
 
@@ -61,6 +99,7 @@ docker compose up --build
 - `GET|POST|PUT|DELETE /api/units`
 - `GET|POST|PUT|DELETE /api/finds`
 - `GET|POST|PUT|DELETE /api/materials`
+- `GET|POST|PUT|DELETE /api/joingroups`（另含 `close`、`members` 子路由，见上节）
 - `GET /api/overview`
 
 前端经 Nginx 将 `/api` 反代至后端容器 `http://backend:8080`。

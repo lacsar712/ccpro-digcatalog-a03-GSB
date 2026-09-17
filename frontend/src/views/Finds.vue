@@ -36,6 +36,7 @@
             <th>器物类型</th>
             <th>材质</th>
             <th>完整度</th>
+            <th>拼合组</th>
             <th>出土日期</th>
             <th>存放位置</th>
             <th>操作</th>
@@ -48,6 +49,12 @@
             <td><span class="tag">{{ item.artifactType }}</span></td>
             <td>{{ item.materialName || item.material?.name || '-' }}</td>
             <td>{{ item.completeness || '-' }}</td>
+            <td>
+              <router-link v-if="item.joinGroupId" :to="`/join-groups/${item.joinGroupId}`">
+                <span class="tag join">{{ item.joinGroupCode }}</span>
+              </router-link>
+              <span v-else>-</span>
+            </td>
             <td>{{ formatDate(item.findDate) }}</td>
             <td>{{ item.storageLoc || '-' }}</td>
             <td>
@@ -255,5 +262,10 @@ onMounted(async () => {
 
 .filters label {
   min-width: 200px;
+}
+
+.tag.join {
+  background: #dcebe2;
+  color: var(--ok);
 }
 </style>

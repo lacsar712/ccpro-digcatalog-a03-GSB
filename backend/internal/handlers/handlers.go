@@ -324,6 +324,7 @@ func (h *Handler) ListFinds(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	h.attachOpenJoinGroups(finds)
 	c.JSON(http.StatusOK, finds)
 }
 
@@ -334,9 +335,10 @@ func (h *Handler) GetFind(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "文物不存在"})
 		return
 	}
-	c.JSON(http.StatusOK, find)
+	finds := []models.Find{find}
+	h.attachOpenJoinGroups(finds)
+	c.JSON(http.StatusOK, finds[0])
 }
-
 func (h *Handler) applyFindReq(find *models.Find, req *findReq) {
 	find.UnitID = req.UnitID
 	find.MaterialID = req.MaterialID
@@ -403,7 +405,14 @@ func (h *Handler) UpdateFind(c *gin.Context) {
 
 func (h *Handler) DeleteFind(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	if err := h.DB.Delete(&models.Find{}, id).Error; err != nil {
+	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		// 同步清理拼合组成员记录，避免悬挂关联
+		if err := tx.Where("find_id = ?", id).Delete(&models.JoinMember{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.Find{}, id).Error
+	})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

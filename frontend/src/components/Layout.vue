@@ -9,7 +9,13 @@
         </div>
       </div>
       <nav>
-        <router-link v-for="item in menus" :key="item.to" :to="item.to" class="nav-item">
+        <router-link
+          v-for="item in menus"
+          :key="item.to"
+          :to="item.to"
+          class="nav-item"
+          :class="{ 'nav-active': isActive(item.to) }"
+        >
           {{ item.label }}
         </router-link>
       </nav>
@@ -25,19 +31,26 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const menus = [
   { to: '/', label: '概览' },
   { to: '/sites', label: '发掘工地' },
   { to: '/units', label: '探方单位' },
   { to: '/finds', label: '出土文物' },
+  { to: '/join-groups', label: '残片拼合组' },
   { to: '/materials', label: '材质分类' }
 ]
+
+// 详情页（如 /join-groups/123）也高亮所属菜单
+function isActive(to) {
+  return to === '/' ? route.path === '/' : route.path.startsWith(to)
+}
 
 function onLogout() {
   auth.logout()
@@ -105,6 +118,7 @@ nav {
 }
 
 .nav-item:hover,
+.nav-item.nav-active,
 .nav-item.router-link-exact-active {
   background: rgba(196, 165, 116, 0.18);
   opacity: 1;

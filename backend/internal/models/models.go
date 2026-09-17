@@ -68,4 +68,40 @@ type Find struct {
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
 	Unit         *Unit          `json:"unit,omitempty" gorm:"foreignKey:UnitID"`
 	Material     *Material      `json:"material,omitempty" gorm:"foreignKey:MaterialID"`
+	// 以下为非持久化展示字段：当前所属 open 拼合组（gorm:"-" 不落库）
+	JoinGroupID   *uint  `json:"joinGroupId,omitempty" gorm:"-"`
+	JoinGroupCode string `json:"joinGroupCode,omitempty" gorm:"-"`
+}
+
+// JoinGroup 状态
+const (
+	JoinGroupStatusOpen   = "open"
+	JoinGroupStatusClosed = "closed"
+)
+
+// JoinGroup 残片拼合组：把同一器物（或同一组合）的残片文物归为一组。
+// 不是平行文物主表——成员通过 JoinMember 关联既有 Find 主数据。
+type JoinGroup struct {
+	ID        uint           `json:"id" gorm:"primaryKey"`
+	Code      string         `json:"code" gorm:"uniqueIndex;size:64;not null"` // 全库唯一
+	Title     string         `json:"title" gorm:"size:128;not null"`
+	Note      string         `json:"note" gorm:"type:text"`
+	Status    string         `json:"status" gorm:"size:16;not null;index"` // open | closed
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	Members   []JoinMember   `json:"members,omitempty" gorm:"foreignKey:GroupID"`
+	// 非持久化展示字段：成员数（gorm:"-" 不落库）
+	MemberCount int64 `json:"memberCount" gorm:"-"`
+}
+
+// JoinMember 拼合组成员：(group_id, find_id) 唯一。
+// 关联表，物理删除（不用软删），保证唯一约束在移除后可重新入组。
+type JoinMember struct {
+	ID        uint       `json:"id" gorm:"primaryKey"`
+	GroupID   uint       `json:"groupId" gorm:"not null;uniqueIndex:uk_join_group_find"`
+	FindID    uint       `json:"findId" gorm:"not null;uniqueIndex:uk_join_group_find"`
+	CreatedAt time.Time  `json:"createdAt"`
+	Group     *JoinGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
+	Find      *Find      `json:"find,omitempty" gorm:"foreignKey:FindID"`
 }

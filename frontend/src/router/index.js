@@ -7,6 +7,8 @@ import Sites from '../views/Sites.vue'
 import Units from '../views/Units.vue'
 import Finds from '../views/Finds.vue'
 import Materials from '../views/Materials.vue'
+import JoinGroups from '../views/JoinGroups.vue'
+import JoinGroupDetail from '../views/JoinGroupDetail.vue'
 
 const routes = [
   { path: '/login', name: 'login', component: Login, meta: { public: true } },
@@ -18,6 +20,8 @@ const routes = [
       { path: 'sites', name: 'sites', component: Sites },
       { path: 'units', name: 'units', component: Units },
       { path: 'finds', name: 'finds', component: Finds },
+      { path: 'join-groups', name: 'join-groups', component: JoinGroups },
+      { path: 'join-groups/:id', name: 'join-group-detail', component: JoinGroupDetail },
       { path: 'materials', name: 'materials', component: Materials }
     ]
   }

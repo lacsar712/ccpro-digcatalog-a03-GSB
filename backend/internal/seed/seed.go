@@ -102,9 +102,68 @@ func Run(db *gorm.DB) {
 			ArtifactType: "青铜器", MaterialName: "青铜", Completeness: "碎片",
 			FindDate: date("2024-06-20"), Description: "青铜戈援部碎片", StorageLoc: "库房B-柜07",
 		},
+		// —— 残片拼合子系统补充的残片文物 ——
+		{
+			UnitID: units[0].ID, MaterialID: &m0, RegisterNo: "EL-2024-0004",
+			ArtifactType: "陶片", MaterialName: "陶器", Completeness: "碎片",
+			FindDate: date("2024-03-13"), Description: "泥质灰陶腹部残片，与口沿片陶系一致", StorageLoc: "库房A-架01",
+		},
+		{
+			UnitID: units[0].ID, MaterialID: &m0, RegisterNo: "EL-2024-0005",
+			ArtifactType: "陶片", MaterialName: "陶器", Completeness: "碎片",
+			FindDate: date("2024-03-14"), Description: "泥质灰陶器底残片，可见麻点纹", StorageLoc: "库房A-架01",
+		},
+		{
+			UnitID: units[3].ID, MaterialID: &m1, RegisterNo: "YX-2024-0023",
+			ArtifactType: "青铜器", MaterialName: "青铜", Completeness: "碎片",
+			FindDate: date("2024-06-21"), Description: "青铜戈内部碎片，与援部残段疑为一器", StorageLoc: "库房B-柜07",
+		},
+		{
+			UnitID: units[2].ID, MaterialID: &m3, RegisterNo: "LZ-2024-0011",
+			ArtifactType: "玉器", MaterialName: "玉石", Completeness: "碎片",
+			FindDate: date("2024-05-09"), Description: "玉琮射口残片，与角部残片断面吻合", StorageLoc: "珍品柜-01",
+		},
 	}
 	for i := range finds {
 		db.Create(&finds[i])
+	}
+
+	// —— 残片拼合组：2 个 open + 1 个 closed ——
+	joinGroups := []models.JoinGroup{
+		{
+			Code: "JOIN-ELT1-01", Status: "open",
+			Title: "二里头 T1 灰陶罐拼合组",
+			Note:  "口沿、腹片、器底三片陶系一致，待继续寻找缺失残片",
+		},
+		{
+			Code: "JOIN-YXT3-01", Status: "open",
+			Title: "殷墟 T3 青铜戈拼合组",
+			Note:  "援部与内部初步拼对，胡部缺失",
+		},
+		{
+			Code: "JOIN-LZT1-01", Status: "closed",
+			Title: "良渚 T1 玉琮残件拼合组",
+			Note:  "角部与射口断面吻合，已完成拼对并建档冻结",
+		},
+	}
+	for i := range joinGroups {
+		db.Create(&joinGroups[i])
+	}
+
+	members := []models.JoinMember{
+		// open 组一：T1 三片灰陶（口沿 / 腹片 / 器底）
+		{GroupID: joinGroups[0].ID, FindID: finds[0].ID, Note: "口沿片"},
+		{GroupID: joinGroups[0].ID, FindID: finds[6].ID, Note: "腹片"},
+		{GroupID: joinGroups[0].ID, FindID: finds[7].ID, Note: "器底片"},
+		// open 组二：T3 青铜戈两碎片
+		{GroupID: joinGroups[1].ID, FindID: finds[5].ID, Note: "援部"},
+		{GroupID: joinGroups[1].ID, FindID: finds[8].ID, Note: "内部"},
+		// closed 组：T1 玉琮两残件
+		{GroupID: joinGroups[2].ID, FindID: finds[3].ID, Note: "角部"},
+		{GroupID: joinGroups[2].ID, FindID: finds[9].ID, Note: "射口"},
+	}
+	for i := range members {
+		db.Create(&members[i])
 	}
 
 	log.Println("seed data inserted")

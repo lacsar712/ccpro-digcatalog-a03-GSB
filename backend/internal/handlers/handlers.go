@@ -324,6 +324,7 @@ func (h *Handler) ListFinds(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	fillJoinGroupCodes(h.DB, finds)
 	c.JSON(http.StatusOK, finds)
 }
 
@@ -334,7 +335,9 @@ func (h *Handler) GetFind(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "文物不存在"})
 		return
 	}
-	c.JSON(http.StatusOK, find)
+	fills := []models.Find{find}
+	fillJoinGroupCodes(h.DB, fills)
+	c.JSON(http.StatusOK, fills[0])
 }
 
 func (h *Handler) applyFindReq(find *models.Find, req *findReq) {

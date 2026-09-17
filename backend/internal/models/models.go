@@ -68,4 +68,36 @@ type Find struct {
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
 	Unit         *Unit          `json:"unit,omitempty" gorm:"foreignKey:UnitID"`
 	Material     *Material      `json:"material,omitempty" gorm:"foreignKey:MaterialID"`
+
+	// JoinGroupCode 为只读展示字段（不入库、不加列）：
+	// 拼合关系完全由 join_members 关联表表达，文物主表仍只有 finds。
+	JoinGroupCode string `json:"joinGroupCode,omitempty" gorm:"-"`
+}
+
+// JoinGroup 残片拼合组。拼合关系通过独立的 JoinMember 关联表表达，
+// 不另造平行文物主表，也不在 Find 上挂文本字段冒充拼合。
+type JoinGroup struct {
+	ID        uint           `json:"id" gorm:"primaryKey"`
+	Code      string         `json:"code" gorm:"uniqueIndex;size:64;not null"` // 全库唯一
+	Status    string         `json:"status" gorm:"size:16;not null;index"`     // open | closed
+	Title     string         `json:"title" gorm:"size:128;not null"`
+	Note      string         `json:"note" gorm:"type:text"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	Members   []JoinMember   `json:"members,omitempty" gorm:"foreignKey:GroupID"`
+
+	// MemberCount 只读统计字段（不入库），列表接口填充。
+	MemberCount int64 `json:"memberCount,omitempty" gorm:"-"`
+}
+
+// JoinMember 拼合组成员：(group_id, find_id) 全库唯一。
+type JoinMember struct {
+	ID        uint       `json:"id" gorm:"primaryKey"`
+	GroupID   uint       `json:"groupId" gorm:"not null;uniqueIndex:idx_join_member_group_find"`
+	FindID    uint       `json:"findId" gorm:"not null;uniqueIndex:idx_join_member_group_find"`
+	Note      string     `json:"note" gorm:"type:text"`
+	CreatedAt time.Time  `json:"createdAt"`
+	Group     *JoinGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
+	Find      *Find      `json:"find,omitempty" gorm:"foreignKey:FindID"`
 }

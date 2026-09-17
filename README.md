@@ -50,7 +50,19 @@ docker compose up --build
 3. **探方/发掘单位 Unit** — 所属工地、编号、深度区间、地层简述
 4. **出土文物 Find** — 所属探方、登记号、器物类型、材质、完整度、出土日期、描述、存放位置
 5. **材质分类 Material** — 名称、描述（字典表）
-6. **概览页** — 工地数、探方数、文物总数、按器物类型统计
+6. **残片拼合 JoinGroup / JoinMember** — 在文物主数据（finds 表）之上新增的拼合子系统：独立拼合组与成员关联表表达拼合关系，**不另造平行文物主表，也不在 Find 上挂文本字段冒充拼合**
+7. **概览页** — 工地数、探方数、文物总数、按器物类型统计
+
+### 残片拼合子系统规则
+
+- `JoinGroup`：`code` 全库唯一；`status` 仅为 `open` / `closed`；含 `title`、`note`。
+- `JoinMember`：关联表，`(groupId, findId)` 全库唯一。
+- 同一时刻一件文物只能属于一个 **open** 组（可保留已关闭组的历史归属）。
+- 入组时若 `Find.completeness` 为「完整」返回 400，仅残缺/碎片可拼合。
+- **closed 组禁止再增删成员**（成员关系冻结），仅可删除整个拼合组（只解除关联，不动文物主数据）。
+- 组详情页按探方筛选，可勾选同探方残片批量加入；Finds 列表通过只读字段 `joinGroupCode` 显示所属组。
+
+种子数据含 3 个拼合组：`JOIN-ELT1-01`（open，二里头 T1 三片灰陶）、`JOIN-YXT3-01`（open，殷墟 T3 青铜戈两件）、`JOIN-LZT1-01`（closed，良渚 T1 玉琮两件）。
 
 ## API 前缀
 
@@ -62,6 +74,15 @@ docker compose up --build
 - `GET|POST|PUT|DELETE /api/finds`
 - `GET|POST|PUT|DELETE /api/materials`
 - `GET /api/overview`
+
+残片拼合（均需 JWT）：
+
+- `GET /api/join-groups?status=open|closed` — 列表按状态过滤
+- `GET /api/join-groups?findId=12` — 按文物反查所属拼合组（可与 `status` 组合）
+- `POST /api/join-groups` / `GET /api/join-groups/:id` / `PUT /api/join-groups/:id` / `DELETE /api/join-groups/:id`
+- `POST /api/join-groups/:id/close` — 关闭拼合组
+- `POST /api/join-groups/:id/members` — body `{ "findId": 12 }`；完整器 400、closed 400、已属其他 open 组 400
+- `DELETE /api/join-groups/:id/members/:findId` — 移出成员；closed 400
 
 前端经 Nginx 将 `/api` 反代至后端容器 `http://backend:8080`。
 

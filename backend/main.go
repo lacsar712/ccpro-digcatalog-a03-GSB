@@ -45,6 +45,8 @@ func main() {
 		&models.Unit{},
 		&models.Material{},
 		&models.Find{},
+		&models.JoinGroup{},
+		&models.JoinMember{},
 	); err != nil {
 		log.Fatalf("auto migrate failed: %v", err)
 	}
@@ -86,6 +88,15 @@ func main() {
 			auth.POST("/finds", h.CreateFind)
 			auth.PUT("/finds/:id", h.UpdateFind)
 			auth.DELETE("/finds/:id", h.DeleteFind)
+
+			auth.GET("/join-groups", h.ListJoinGroups)
+			auth.GET("/join-groups/:id", h.GetJoinGroup)
+			auth.POST("/join-groups", h.CreateJoinGroup)
+			auth.PUT("/join-groups/:id", h.UpdateJoinGroup)
+			auth.DELETE("/join-groups/:id", h.DeleteJoinGroup)
+			auth.POST("/join-groups/:id/close", h.CloseJoinGroup)
+			auth.POST("/join-groups/:id/members", h.AddJoinMember)
+			auth.DELETE("/join-groups/:id/members/:findId", h.RemoveJoinMember)
 		}
 	}
 
